@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Filter, BarChart, FileText } from "lucide-react";
+import { BarChart } from "lucide-react";
 
 export default function Relatorios() {
   const [relatorios, setRelatorios] = useState([]);
@@ -15,6 +15,8 @@ export default function Relatorios() {
 
   const handleGenerateReport = () => {
     // Lógica para gerar o relatório com base nos filtros
+    // Com o Firebase, esta função buscaria dados de serviços e despesas
+    // entre as datas filter.startDate e filter.endDate.
     const mockData = [
       { id: 1, type: "Serviços", value: 15000, period: "Mês atual" },
       { id: 2, type: "Despesas", value: 5000, period: "Mês atual" },
@@ -39,23 +41,23 @@ export default function Relatorios() {
           <div className="mb-4 flex gap-4 items-center">
             <div className="flex-1">
               <label htmlFor="startDate" className="sr-only">Data de Início</label>
-              <input 
-                id="startDate" 
-                name="startDate" 
-                type="date" 
-                value={filter.startDate} 
-                onChange={handleFilterChange} 
+              <input
+                id="startDate"
+                name="startDate"
+                type="date"
+                value={filter.startDate}
+                onChange={handleFilterChange}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             <div className="flex-1">
               <label htmlFor="endDate" className="sr-only">Data de Fim</label>
-              <input 
-                id="endDate" 
-                name="endDate" 
-                type="date" 
-                value={filter.endDate} 
-                onChange={handleFilterChange} 
+              <input
+                id="endDate"
+                name="endDate"
+                type="date"
+                value={filter.endDate}
+                onChange={handleFilterChange}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>

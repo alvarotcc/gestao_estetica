@@ -51,34 +51,22 @@ const App = () => (
           } />
           <Route path="/materiais" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Gestão de Materiais</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Materiais />
             </MainLayout>
           } />
           <Route path="/colaboradores" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Gestão de Colaboradores</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Colaboradores />
             </MainLayout>
           } />
           <Route path="/agenda" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Agenda de Agendamentos</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Agenda />
             </MainLayout>
           } />
           <Route path="/relatorios" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Relatórios e Métricas</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Relatorios />
             </MainLayout>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

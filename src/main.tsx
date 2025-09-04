@@ -1,13 +1,15 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { AuthProvider } from './AuthContext.tsx';
 
-// Firebase imports
+// Importe todos os serviços do Firebase
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 
-// Your web app's Firebase configuration
+// Suas chaves de configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCG4I8q0d1iY0_UzYQJhRL8TMiBlALz9vc",
   authDomain: "kron-studio-car.firebaseapp.com",
@@ -18,9 +20,19 @@ const firebaseConfig = {
   measurementId: "G-2C2KKBF24G"
 };
 
-// Initialize Firebase
+// Inicialize a instância principal do Firebase
 const app = initializeApp(firebaseConfig);
-constanalytics = getAnalytics(app);
-const db = getFirestore(app);
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Inicialize os serviços do Firebase
+const db = getFirestore(app);
+const auth = getAuth(app);
+const analytics = getAnalytics(app);
+
+// Exporte a instância 'app' e os serviços que outros arquivos precisam
+export { app, db, auth, analytics };
+
+createRoot(document.getElementById("root")!).render(
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
