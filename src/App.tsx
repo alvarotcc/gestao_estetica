@@ -1,3 +1,4 @@
+// src/App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
+import Veiculos from "./pages/Veiculos";
+import Servicos from "./pages/Servicos";
+import Materiais from "./pages/Materiais";
+import { Agenda } from "./pages/Agenda";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient();
@@ -29,18 +34,12 @@ const App = () => (
           } />
           <Route path="/veiculos" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Gestão de Veículos</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Veiculos />
             </MainLayout>
           } />
           <Route path="/servicos" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Gestão de Serviços</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Servicos />
             </MainLayout>
           } />
           <Route path="/checklist" element={
@@ -53,10 +52,7 @@ const App = () => (
           } />
           <Route path="/materiais" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Gestão de Materiais</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Materiais />
             </MainLayout>
           } />
           <Route path="/colaboradores" element={
