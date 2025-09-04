@@ -26,6 +26,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import logo from "../../assets/logo.png";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -58,17 +59,15 @@ export function AppSidebar() {
         <div className="p-4 border-b border-border/50">
           {!collapsed ? (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                <Car className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <img src={logo} alt="Kron Studio Logo" className="w-10 h-10 object-contain" />
               <div>
-                <h2 className="text-lg font-bold text-secondary-foreground">AutoEstética</h2>
+                <h2 className="text-lg font-bold text-secondary-foreground">Kron Studio</h2>
                 <p className="text-xs text-muted-foreground">Gestão Profissional</p>
               </div>
             </div>
           ) : (
             <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center mx-auto">
-              <Car className="w-6 h-6 text-primary-foreground" />
+              <img src={logo} alt="Kron Studio Logo" className="w-6 h-6 object-contain" />
             </div>
           )}
         </div>
