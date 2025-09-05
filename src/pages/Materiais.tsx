@@ -29,12 +29,24 @@ import {
 } from "@/components/ui/dialog";
 import { collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import MovimentacaoEstoque from "@/components/estoque/MovimentacaoEstoque";
 
 interface Material {
   id: string;
   nome: string;
   quantidade: number;
   unidade: string;
+  quantidadeMinima: number;
+  quantidadeMaxima: number;
+  precoCusto: number;
+  precoVenda: number;
+  categoria: string;
+  fornecedor: string;
+  codigoBarras?: string;
+  localizacao: string;
+  dataUltimaEntrada?: string;
+  dataUltimaSaida?: string;
+  observacoes?: string;
 }
 
 export default function Materiais() {
@@ -45,7 +57,16 @@ export default function Materiais() {
   const [newMaterial, setNewMaterial] = useState({
     nome: "",
     quantidade: 0,
-    unidade: ""
+    unidade: "",
+    quantidadeMinima: 0,
+    quantidadeMaxima: 0,
+    precoCusto: 0,
+    precoVenda: 0,
+    categoria: "",
+    fornecedor: "",
+    codigoBarras: "",
+    localizacao: "",
+    observacoes: ""
   });
 
   useEffect(() => {
@@ -84,7 +105,16 @@ export default function Materiais() {
       setNewMaterial({
         nome: "",
         quantidade: 0,
-        unidade: ""
+        unidade: "",
+        quantidadeMinima: 0,
+        quantidadeMaxima: 0,
+        precoCusto: 0,
+        precoVenda: 0,
+        categoria: "",
+        fornecedor: "",
+        codigoBarras: "",
+        localizacao: "",
+        observacoes: ""
       });
       setEditingMaterial(null);
     }
@@ -96,7 +126,16 @@ export default function Materiais() {
     setNewMaterial({
       nome: "",
       quantidade: 0,
-      unidade: ""
+      unidade: "",
+      quantidadeMinima: 0,
+      quantidadeMaxima: 0,
+      precoCusto: 0,
+      precoVenda: 0,
+      categoria: "",
+      fornecedor: "",
+      codigoBarras: "",
+      localizacao: "",
+      observacoes: ""
     });
     setEditingMaterial(null);
   };
@@ -192,6 +231,106 @@ export default function Materiais() {
                   required
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantidadeMinima">Qtd. Mínima</Label>
+                  <Input
+                    id="quantidadeMinima"
+                    name="quantidadeMinima"
+                    type="number"
+                    value={editingMaterial?.quantidadeMinima || newMaterial.quantidadeMinima}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quantidadeMaxima">Qtd. Máxima</Label>
+                  <Input
+                    id="quantidadeMaxima"
+                    name="quantidadeMaxima"
+                    type="number"
+                    value={editingMaterial?.quantidadeMaxima || newMaterial.quantidadeMaxima}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="precoCusto">Preço Custo (R$)</Label>
+                  <Input
+                    id="precoCusto"
+                    name="precoCusto"
+                    type="number"
+                    step="0.01"
+                    value={editingMaterial?.precoCusto || newMaterial.precoCusto}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="precoVenda">Preço Venda (R$)</Label>
+                  <Input
+                    id="precoVenda"
+                    name="precoVenda"
+                    type="number"
+                    step="0.01"
+                    value={editingMaterial?.precoVenda || newMaterial.precoVenda}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="categoria">Categoria</Label>
+                <Input
+                  id="categoria"
+                  name="categoria"
+                  value={editingMaterial?.categoria || newMaterial.categoria}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Limpeza, Lubrificantes"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fornecedor">Fornecedor</Label>
+                <Input
+                  id="fornecedor"
+                  name="fornecedor"
+                  value={editingMaterial?.fornecedor || newMaterial.fornecedor}
+                  onChange={handleInputChange}
+                  placeholder="Nome do fornecedor"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="codigoBarras">Código de Barras</Label>
+                <Input
+                  id="codigoBarras"
+                  name="codigoBarras"
+                  value={editingMaterial?.codigoBarras || newMaterial.codigoBarras}
+                  onChange={handleInputChange}
+                  placeholder="Código de barras do produto"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="localizacao">Localização</Label>
+                <Input
+                  id="localizacao"
+                  name="localizacao"
+                  value={editingMaterial?.localizacao || newMaterial.localizacao}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Prateleira A1, Armário 2"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">Observações</Label>
+                <Input
+                  id="observacoes"
+                  name="observacoes"
+                  value={editingMaterial?.observacoes || newMaterial.observacoes}
+                  onChange={handleInputChange}
+                  placeholder="Observações adicionais"
+                />
+              </div>
               <DialogFooter className="mt-4 flex-shrink-0">
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
                   Cancelar
@@ -238,34 +377,77 @@ export default function Materiais() {
                 <TableRow>
                   <TableHead>Material</TableHead>
                   <TableHead>Quantidade</TableHead>
-                  <TableHead>Unidade</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Fornecedor</TableHead>
+                  <TableHead>Localização</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredMaterials.map((material) => (
-                  <TableRow key={material.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="font-medium">{material.nome}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{material.quantidade}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground">{material.unidade}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleOpenDialog(material)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDeleteMaterial(material.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredMaterials.map((material) => {
+                  const isLowStock = material.quantidade <= material.quantidadeMinima;
+                  const isOutOfStock = material.quantidade === 0;
+                  const isOverStock = material.quantidade > material.quantidadeMaxima;
+
+                  let statusVariant: "default" | "secondary" | "destructive" | "outline" = "default";
+                  let statusText = "Normal";
+
+                  if (isOutOfStock) {
+                    statusVariant = "destructive";
+                    statusText = "Esgotado";
+                  } else if (isLowStock) {
+                    statusVariant = "secondary";
+                    statusText = "Estoque Baixo";
+                  } else if (isOverStock) {
+                    statusVariant = "outline";
+                    statusText = "Estoque Alto";
+                  }
+
+                  return (
+                    <TableRow key={material.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="font-medium">{material.nome}</div>
+                        {material.codigoBarras && (
+                          <div className="text-xs text-muted-foreground">Cod: {material.codigoBarras}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="outline">{material.quantidade} {material.unidade}</Badge>
+                          {material.quantidadeMinima > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              Mín: {material.quantidadeMinima}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant}>{statusText}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{material.categoria || "-"}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{material.fornecedor || "-"}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{material.localizacao || "-"}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleOpenDialog(material)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <MovimentacaoEstoque material={material} onMovimentacao={() => {}} />
+                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDeleteMaterial(material.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

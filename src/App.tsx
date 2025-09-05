@@ -10,6 +10,7 @@ import Clientes from "./pages/Clientes";
 import Veiculos from "./pages/Veiculos";
 import Servicos from "./pages/Servicos";
 import Materiais from "./pages/Materiais";
+import Fornecedores from "./pages/Fornecedores";
 import Agenda from "./pages/Agenda";
 import Checklist from "./pages/Checklist";
 import Relatorios from "./pages/Relatorios";
@@ -135,6 +136,16 @@ const App = () => (
                 <PrivateRoute>
                   <MainLayout>
                     <Materiais />
+                  </MainLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/fornecedores"
+              element={
+                <PrivateRoute>
+                  <MainLayout>
+                    <Fornecedores />
                   </MainLayout>
                 </PrivateRoute>
               }

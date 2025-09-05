@@ -208,7 +208,7 @@ export default function ControleCaixa() {
       data: now.toISOString().split('T')[0],
       hora: now.toTimeString().split(' ')[0],
       usuarioId: user?.uid || "",
-      usuarioNome: userData?.name || "Usuário",
+      usuarioNome: userData?.nome || "Usuário",
       formaPagamento: editingMovement?.formaPagamento || newMovement.formaPagamento,
       observacoes: editingMovement?.observacoes || newMovement.observacoes
     };
@@ -239,7 +239,7 @@ export default function ControleCaixa() {
       data: today,
       valorInicial: newOpening.valorInicial,
       usuarioId: user?.uid || "",
-      usuarioNome: userData?.name || "Usuário",
+      usuarioNome: userData?.nome || "Usuário",
       status: "aberto"
     };
 
@@ -305,15 +305,17 @@ export default function ControleCaixa() {
     return date.toISOString().split('T')[0];
   }).reverse();
 
+  let cumulativeSaldo = 0;
   const chartData = last7Days.map(date => {
     const dayMovements = movements.filter(m => m.data === date);
     const entradas = dayMovements.filter(m => m.tipo === "entrada").reduce((total, m) => total + m.valor, 0);
     const saidas = dayMovements.filter(m => m.tipo === "saida").reduce((total, m) => total + m.valor, 0);
+    cumulativeSaldo += entradas - saidas;
     return {
       date: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
       entradas,
       saidas,
-      saldo: entradas - saidas
+      saldo: cumulativeSaldo
     };
   });
 
@@ -393,6 +395,108 @@ export default function ControleCaixa() {
                     Saída
                   </Button>
                 </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingMovement ? "Editar Movimento" : `Novo ${selectedTipo === "entrada" ? "Entrada" : "Saída"}`}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-y-auto">
+                    <form onSubmit={handleSaveMovement} className="space-y-4 pr-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="categoria">Categoria *</Label>
+                        <Select
+                          value={editingMovement?.categoria || newMovement.categoria}
+                          onValueChange={(value) => handleSelectChange("categoria", value)}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(selectedTipo === "entrada" ? categoriasEntradas : categoriasSaidas).map((categoria) => (
+                              <SelectItem key={categoria} value={categoria}>
+                                {categoria}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="descricao">Descrição *</Label>
+                        <Input
+                          id="descricao"
+                          name="descricao"
+                          value={editingMovement?.descricao || newMovement.descricao}
+                          onChange={handleInputChange}
+                          placeholder="Descrição do movimento"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="valor">Valor *</Label>
+                        <Input
+                          id="valor"
+                          name="valor"
+                          type="number"
+                          step="0.01"
+                          value={editingMovement?.valor || newMovement.valor}
+                          onChange={(e) => {
+                            const valor = parseFloat(e.target.value) || 0;
+                            if (editingMovement) {
+                              setEditingMovement(prev => prev ? { ...prev, valor } : null);
+                            } else {
+                              setNewMovement({ ...newMovement, valor });
+                            }
+                          }}
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
+                        <Select
+                          value={editingMovement?.formaPagamento || newMovement.formaPagamento}
+                          onValueChange={(value) => handleSelectChange("formaPagamento", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a forma de pagamento" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {formasPagamento.map((forma) => (
+                              <SelectItem key={forma} value={forma}>
+                                {forma}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="observacoes">Observações</Label>
+                        <Textarea
+                          id="observacoes"
+                          name="observacoes"
+                          value={editingMovement?.observacoes || newMovement.observacoes}
+                          onChange={handleInputChange}
+                          placeholder="Observações adicionais..."
+                        />
+                      </div>
+
+                      <DialogFooter className="mt-4 flex-shrink-0">
+                        <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                          Cancelar
+                        </Button>
+                        <Button type="submit" className={selectedTipo === "entrada" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}>
+                          {editingMovement ? "Salvar Alterações" : "Registrar Movimento"}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </div>
+                </DialogContent>
               </Dialog>
               <Button
                 variant="outline"
@@ -527,111 +631,7 @@ export default function ControleCaixa() {
         </CardContent>
       </Card>
 
-      {/* Dialog para Movimento */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>
-              {editingMovement ? "Editar Movimento" : `Novo ${selectedTipo === "entrada" ? "Entrada" : "Saída"}`}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto">
-            <form onSubmit={handleSaveMovement} className="space-y-4 pr-2">
-              <div className="space-y-2">
-                <Label htmlFor="categoria">Categoria *</Label>
-                <Select
-                  value={editingMovement?.categoria || newMovement.categoria}
-                  onValueChange={(value) => handleSelectChange("categoria", value)}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(selectedTipo === "entrada" ? categoriasEntradas : categoriasSaidas).map((categoria) => (
-                      <SelectItem key={categoria} value={categoria}>
-                        {categoria}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição *</Label>
-                <Input
-                  id="descricao"
-                  name="descricao"
-                  value={editingMovement?.descricao || newMovement.descricao}
-                  onChange={handleInputChange}
-                  placeholder="Descrição do movimento"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="valor">Valor *</Label>
-                <Input
-                  id="valor"
-                  name="valor"
-                  type="number"
-                  step="0.01"
-                  value={editingMovement?.valor || newMovement.valor}
-                  onChange={(e) => {
-                    const valor = parseFloat(e.target.value) || 0;
-                    if (editingMovement) {
-                      setEditingMovement(prev => prev ? { ...prev, valor } : null);
-                    } else {
-                      setNewMovement({ ...newMovement, valor });
-                    }
-                  }}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
-                <Select
-                  value={editingMovement?.formaPagamento || newMovement.formaPagamento}
-                  onValueChange={(value) => handleSelectChange("formaPagamento", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a forma de pagamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formasPagamento.map((forma) => (
-                      <SelectItem key={forma} value={forma}>
-                        {forma}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações</Label>
-                <Textarea
-                  id="observacoes"
-                  name="observacoes"
-                  value={editingMovement?.observacoes || newMovement.observacoes}
-                  onChange={handleInputChange}
-                  placeholder="Observações adicionais..."
-                />
-              </div>
-
-              <DialogFooter className="mt-4 flex-shrink-0">
-                <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className={selectedTipo === "entrada" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}>
-                  {editingMovement ? "Salvar Alterações" : "Registrar Movimento"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

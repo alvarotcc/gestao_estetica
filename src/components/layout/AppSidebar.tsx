@@ -16,7 +16,8 @@ import {
   Settings,
   LogOut,
   Menu,
-  Receipt
+  Receipt,
+  Truck
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -43,6 +44,7 @@ const menuItems = [
   { title: "Checklist", url: "/checklist", icon: CheckSquare },
   { title: "Templates de Checklist", url: "/checklist-templates", icon: Settings },
   { title: "Materiais", url: "/materiais", icon: Package },
+  { title: "Fornecedores", url: "/fornecedores", icon: Truck },
   { title: "Ordens de Serviço", url: "/ordem-servico", icon: FileText },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Controle de Caixa", url: "/controle-caixa", icon: Receipt },
