@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo_fast.png";
@@ -17,12 +18,25 @@ function Header() {
   const navigate = useNavigate();
   const { unreadCount } = useNotifications();
   const { toggleSidebar, state } = useSidebar();
+  const { user } = useAuth();
 
   const handleNotificationClick = () => {
     navigate('/notificacoes');
   };
 
   const isCollapsed = state === "collapsed";
+
+  // Extract initials from user name
+  const getInitials = (name: string | undefined) => {
+    if (!name) return "U";
+    const names = name.trim().split(" ");
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
+  // Adjust for user object structure if name is not directly on user
+  const userName = typeof user === "object" && user !== null && "name" in user ? (user as any).name : undefined;
+  const initials = getInitials(userName);
 
   return (
     <header className="h-16 border-b bg-card shadow-card flex items-center justify-between px-6">
@@ -68,7 +82,7 @@ function Header() {
         <img src={logo} alt="Logo Fast" className="w-8 h-8 object-contain" />
 
         <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
-          U
+          {initials}
         </div>
       </div>
     </header>
