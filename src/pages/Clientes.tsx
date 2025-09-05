@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase"; // Importe a conexão com o Firebase
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Client {
   id: string;
@@ -55,6 +56,7 @@ export default function Clientes() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newClient, setNewClient] = useState(initialClientState);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const { userData } = useAuth();
 
   useEffect(() => {
     const clientsCollection = collection(db, "clientes");
@@ -117,7 +119,12 @@ const handleSaveClient = async (e: React.FormEvent) => {
     }
   } else {
     try {
-      await addDoc(collection(db, "clientes"), newClient);
+      const clientData = {
+        ...newClient,
+        createdBy: userData?.uid,
+        createdAt: new Date(),
+      };
+      await addDoc(collection(db, "clientes"), clientData);
       console.log("Cliente adicionado com sucesso!");
       handleCloseDialog();
     } catch (error) {
@@ -154,11 +161,12 @@ const handleSaveClient = async (e: React.FormEvent) => {
               Novo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>{editingClient ? "Editar Cliente" : "Cadastrar Novo Cliente"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSaveClient} className="space-y-4">
+            <div className="flex-1 overflow-y-auto">
+              <form onSubmit={handleSaveClient} className="space-y-4 pr-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome Completo *</Label>
@@ -185,7 +193,7 @@ const handleSaveClient = async (e: React.FormEvent) => {
                 <Label htmlFor="observacoes">Observações</Label>
                 <Textarea id="observacoes" value={editingClient?.observacoes || newClient.observacoes} onChange={handleInputChange} placeholder="Informações adicionais sobre o cliente" />
               </div>
-              <DialogFooter className="mt-4">
+              <DialogFooter className="mt-4 flex-shrink-0">
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
                   Cancelar
                 </Button>
@@ -193,7 +201,8 @@ const handleSaveClient = async (e: React.FormEvent) => {
                   {editingClient ? "Salvar Alterações" : "Cadastrar Cliente"}
                 </Button>
               </DialogFooter>
-            </form>
+              </form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

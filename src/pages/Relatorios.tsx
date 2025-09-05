@@ -15,9 +15,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface Client {
   id: string;
@@ -85,6 +94,13 @@ export default function Relatorios() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState("30");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [selectedClient, setSelectedClient] = useState("");
+  const [selectedService, setSelectedService] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [selectedVehicle, setSelectedVehicle] = useState("");
 
   useEffect(() => {
     // Buscar dados de todas as coleções
@@ -161,17 +177,43 @@ export default function Relatorios() {
   const totalAppointments = appointments.length;
   const totalEmployees = employees.length;
 
-  // Receita estimada baseada nos serviços agendados
-  const estimatedRevenue = appointments
-    .filter(apt => apt.status === "concluido")
-    .reduce((total, apt) => {
-      const service = services.find(s => s.nome === apt.servicoNome);
-      return total + (service?.preco || 0);
-    }, 0);
+  // Filtrar agendamentos baseado nos filtros e relacionar dados corretamente
+  const filteredAppointments = appointments.filter(apt => {
+    const aptDate = new Date(apt.data);
+    const fromDate = dateFrom ? new Date(dateFrom) : null;
+    const toDate = dateTo ? new Date(dateTo) : null;
 
-  // Dados para gráfico de serviços mais realizados
-  const servicesChartData = services.map(service => {
-    const count = appointments.filter(apt => apt.servicoNome === service.nome).length;
+    if (fromDate && aptDate < fromDate) return false;
+    if (toDate && aptDate > toDate) return false;
+    if (selectedClient && selectedClient !== "" && apt.clienteId !== selectedClient) return false;
+    if (selectedService && selectedService !== "" && apt.servicoId !== selectedService) return false;
+    if (selectedEmployee && selectedEmployee !== "" && apt.colaboradorId !== selectedEmployee) return false;
+    if (selectedVehicle && selectedVehicle !== "" && apt.veiculoId !== selectedVehicle) return false;
+    return true;
+  });
+
+  // Filtrar veículos relacionados ao cliente selecionado
+  const filteredVehicles = selectedClient
+    ? vehicles.filter(vehicle => vehicle.clienteId === selectedClient)
+    : vehicles;
+
+  // Filtrar serviços relacionados aos agendamentos filtrados
+  const filteredServices = selectedService
+    ? services.filter(service => service.id === selectedService)
+    : services;
+
+  // Filtrar colaboradores relacionados aos agendamentos filtrados
+  const filteredEmployees = selectedEmployee
+    ? employees.filter(employee => employee.id === selectedEmployee)
+    : employees;
+
+  // Filtrar materiais relacionados aos serviços filtrados (exemplo de ligação)
+  // Aqui você pode implementar a lógica para relacionar materiais aos serviços, se aplicável
+  const filteredMaterials = materials; // Ajuste conforme a lógica de relacionamento
+
+  // Atualizar dados para gráficos com base nos dados filtrados e relacionados
+  const servicesChartData = filteredServices.map(service => {
+    const count = filteredAppointments.filter(apt => apt.servicoNome === service.nome).length;
     return {
       name: service.nome,
       value: count,
@@ -179,13 +221,40 @@ export default function Relatorios() {
     };
   }).filter(item => item.value > 0);
 
-  // Dados para gráfico de status dos agendamentos
   const statusChartData = [
-    { name: "Agendado", value: appointments.filter(apt => apt.status === "agendado").length, color: "#8884d8" },
-    { name: "Em Andamento", value: appointments.filter(apt => apt.status === "em_andamento").length, color: "#82ca9d" },
-    { name: "Concluído", value: appointments.filter(apt => apt.status === "concluido").length, color: "#ffc658" },
-    { name: "Cancelado", value: appointments.filter(apt => apt.status === "cancelado").length, color: "#ff7c7c" }
+    { name: "Agendado", value: filteredAppointments.filter(apt => apt.status === "agendado").length, color: "#8884d8" },
+    { name: "Em Andamento", value: filteredAppointments.filter(apt => apt.status === "em_andamento").length, color: "#82ca9d" },
+    { name: "Concluído", value: filteredAppointments.filter(apt => apt.status === "concluido").length, color: "#ffc658" },
+    { name: "Cancelado", value: filteredAppointments.filter(apt => apt.status === "cancelado").length, color: "#ff7c7c" }
   ].filter(item => item.value > 0);
+
+  // Receita estimada baseada nos serviços agendados
+  const estimatedRevenue = filteredAppointments
+    .filter(apt => apt.status === "concluido")
+    .reduce((total, apt) => {
+      const service = filteredServices.find(s => s.nome === apt.servicoNome);
+      return total + (service?.preco || 0);
+    }, 0);
+
+  // Dados para gráfico de serviços mais realizados
+  // Removido duplicação, usando filteredServices e filteredAppointments já definidos
+  // const servicesChartData = services.map(service => {
+  //   const count = filteredAppointments.filter(apt => apt.servicoNome === service.nome).length;
+  //   return {
+  //     name: service.nome,
+  //     value: count,
+  //     revenue: count * service.preco
+  //   };
+  // }).filter(item => item.value > 0);
+
+  // Dados para gráfico de status dos agendamentos
+  // Removido duplicação, usando filteredAppointments já definido
+  // const statusChartData = [
+  //   { name: "Agendado", value: filteredAppointments.filter(apt => apt.status === "agendado").length, color: "#8884d8" },
+  //   { name: "Em Andamento", value: filteredAppointments.filter(apt => apt.status === "em_andamento").length, color: "#82ca9d" },
+  //   { name: "Concluído", value: filteredAppointments.filter(apt => apt.status === "concluido").length, color: "#ffc658" },
+  //   { name: "Cancelado", value: filteredAppointments.filter(apt => apt.status === "cancelado").length, color: "#ff7c7c" }
+  // ].filter(item => item.value > 0);
 
   // Dados para gráfico de receita mensal (simulado)
   const revenueChartData = [
@@ -197,6 +266,75 @@ export default function Relatorios() {
     { month: "Jun", revenue: 19800 }
   ];
 
+  // Funções para os botões
+  const handleGeneratePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("Relatório de Gestão Estética", 20, 20);
+
+    doc.setFontSize(12);
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 20, 40);
+
+    doc.text("Filtros Aplicados:", 20, 60);
+    if (dateFrom) doc.text(`Data Início: ${dateFrom}`, 20, 70);
+    if (dateTo) doc.text(`Data Fim: ${dateTo}`, 20, 80);
+    if (selectedClient) {
+      const client = clients.find(c => c.id === selectedClient);
+      doc.text(`Cliente: ${client?.nome}`, 20, 90);
+    }
+    if (selectedService) {
+      const service = services.find(s => s.id === selectedService);
+      doc.text(`Serviço: ${service?.nome}`, 20, 100);
+    }
+    if (selectedEmployee) {
+      const employee = employees.find(e => e.id === selectedEmployee);
+      doc.text(`Colaborador: ${employee?.nome}`, 20, 110);
+    }
+    if (selectedVehicle) {
+      const vehicle = vehicles.find(v => v.id === selectedVehicle);
+      doc.text(`Veículo: ${vehicle?.placa} - ${vehicle?.marca} ${vehicle?.modelo}`, 20, 120);
+    }
+
+    let y = 140;
+    doc.text("Agendamentos Filtrados:", 20, y);
+    y += 10;
+
+    filteredAppointments.forEach((apt, index) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${index + 1}. ${apt.clienteNome} - ${apt.servicoNome} - ${apt.data} - ${apt.status}`, 20, y);
+      y += 10;
+    });
+
+    doc.save('relatorio.pdf');
+  };
+
+  const handleExportData = () => {
+    const data = {
+      clients,
+      vehicles,
+      services,
+      materials,
+      appointments: filteredAppointments,
+      employees,
+      metrics: {
+        totalClients,
+        totalVehicles,
+        estimatedRevenue,
+        totalAppointments: filteredAppointments.length
+      }
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'relatorios_dados.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -206,20 +344,88 @@ export default function Relatorios() {
           <p className="text-muted-foreground">Análise completa do desempenho do negócio</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Período:</span>
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">7 dias</SelectItem>
-              <SelectItem value="30">30 dias</SelectItem>
-              <SelectItem value="90">90 dias</SelectItem>
-              <SelectItem value="365">1 ano</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Período:</span>
+        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7">7 dias</SelectItem>
+            <SelectItem value="30">30 dias</SelectItem>
+            <SelectItem value="90">90 dias</SelectItem>
+            <SelectItem value="365">1 ano</SelectItem>
+          </SelectContent>
+        </Select>
+        <input
+          type="date"
+          className="ml-4 border rounded px-2 py-1"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          placeholder="Data Início"
+        />
+        <input
+          type="date"
+          className="ml-2 border rounded px-2 py-1"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          placeholder="Data Fim"
+        />
+      </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4">
+        <Select value={selectedClient || undefined} onValueChange={setSelectedClient}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Selecionar Cliente" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="undefined">Todos os Clientes</SelectItem>
+            {clients.map(client => (
+              <SelectItem key={client.id} value={client.id}>{client.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedService || undefined} onValueChange={setSelectedService}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Selecionar Serviço" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="undefined">Todos os Serviços</SelectItem>
+            {services.map(service => (
+              <SelectItem key={service.id} value={service.id}>{service.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedEmployee || undefined} onValueChange={setSelectedEmployee}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Selecionar Colaborador" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="undefined">Todos os Colaboradores</SelectItem>
+            {employees.map(employee => (
+              <SelectItem key={employee.id} value={employee.id}>{employee.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedVehicle || undefined} onValueChange={setSelectedVehicle}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Selecionar Veículo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="undefined">Todos os Veículos</SelectItem>
+            {vehicles.map(vehicle => (
+              <SelectItem key={vehicle.id} value={vehicle.id}>{vehicle.placa} - {vehicle.marca} {vehicle.modelo}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-4">
+        <Button onClick={handleGeneratePDF}>Gerar Relatório PDF</Button>
+        <Button variant="outline" onClick={handleExportData}>Exportar Dados</Button>
       </div>
 
       {/* KPI Cards */}
@@ -269,9 +475,9 @@ export default function Relatorios() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalAppointments}</div>
+            <div className="text-2xl font-bold">{filteredAppointments.length}</div>
             <p className="text-xs text-muted-foreground">
-              Total de agendamentos realizados
+              Agendamentos filtrados
             </p>
           </CardContent>
         </Card>

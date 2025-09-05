@@ -45,6 +45,10 @@ interface Vehicle {
   placa: string;
   clienteId: string;
   clienteNome?: string;
+  ano?: string;
+  cor?: string;
+  quilometragem?: number;
+  combustivel?: string;
 }
 
 interface Client {
@@ -62,7 +66,11 @@ export default function Veiculos() {
     marca: "",
     modelo: "",
     placa: "",
-    clienteId: ""
+    clienteId: "",
+    ano: "",
+    cor: "",
+    quilometragem: 0,
+    combustivel: ""
   });
 
   useEffect(() => {
@@ -127,7 +135,11 @@ export default function Veiculos() {
         marca: "",
         modelo: "",
         placa: "",
-        clienteId: ""
+        clienteId: "",
+        ano: "",
+        cor: "",
+        quilometragem: 0,
+        combustivel: ""
       });
       setEditingVehicle(null);
     }
@@ -140,7 +152,11 @@ export default function Veiculos() {
       marca: "",
       modelo: "",
       placa: "",
-      clienteId: ""
+      clienteId: "",
+      ano: "",
+      cor: "",
+      quilometragem: 0,
+      combustivel: ""
     });
     setEditingVehicle(null);
   };
@@ -196,11 +212,12 @@ export default function Veiculos() {
               Novo Veículo
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>{editingVehicle ? "Editar Veículo" : "Cadastrar Novo Veículo"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSaveVehicle} className="space-y-4">
+            <div className="flex-1 overflow-y-auto">
+              <form onSubmit={handleSaveVehicle} className="space-y-4 pr-2">
               <div className="space-y-2">
                 <Label htmlFor="clienteId">Cliente *</Label>
                 <Select
@@ -253,15 +270,57 @@ export default function Veiculos() {
                   required
                 />
               </div>
-              <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-gradient-primary">
-                  {editingVehicle ? "Salvar Alterações" : "Cadastrar Veículo"}
-                </Button>
-              </DialogFooter>
-            </form>
+              <div className="space-y-2">
+                <Label htmlFor="ano">Ano</Label>
+                <Input
+                  id="ano"
+                  name="ano"
+                  value={editingVehicle?.ano || newVehicle.ano}
+                  onChange={handleInputChange}
+                  placeholder="Ex: 2020"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cor">Cor</Label>
+                <Input
+                  id="cor"
+                  name="cor"
+                  value={editingVehicle?.cor || newVehicle.cor}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Preto, Branco, Vermelho"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quilometragem">Quilometragem</Label>
+                <Input
+                  id="quilometragem"
+                  name="quilometragem"
+                  type="number"
+                  value={editingVehicle?.quilometragem || newVehicle.quilometragem}
+                  onChange={handleInputChange}
+                  placeholder="Ex: 50000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="combustivel">Combustível</Label>
+                <Input
+                  id="combustivel"
+                  name="combustivel"
+                  value={editingVehicle?.combustivel || newVehicle.combustivel}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Gasolina, Diesel, Flex"
+                />
+              </div>
+              </form>
+            </div>
+            <DialogFooter className="mt-4 flex-shrink-0">
+              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-gradient-primary">
+                {editingVehicle ? "Salvar Alterações" : "Cadastrar Veículo"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -300,6 +359,10 @@ export default function Veiculos() {
                   <TableHead>Marca</TableHead>
                   <TableHead>Modelo</TableHead>
                   <TableHead>Placa</TableHead>
+                  <TableHead>Ano</TableHead>
+                  <TableHead>Cor</TableHead>
+                  <TableHead>Quilometragem</TableHead>
+                  <TableHead>Combustível</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -314,6 +377,10 @@ export default function Veiculos() {
                       <TableCell>{vehicle.marca}</TableCell>
                       <TableCell>{vehicle.modelo}</TableCell>
                       <TableCell>{vehicle.placa}</TableCell>
+                      <TableCell>{vehicle.ano || "-"}</TableCell>
+                      <TableCell>{vehicle.cor || "-"}</TableCell>
+                      <TableCell>{vehicle.quilometragem ? vehicle.quilometragem.toLocaleString() + " km" : "-"}</TableCell>
+                      <TableCell>{vehicle.combustivel || "-"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button size="sm" variant="outline">

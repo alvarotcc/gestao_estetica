@@ -4,12 +4,23 @@ import { Toaster } from "@/components/ui/toaster";
 import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import logo from "../../assets/logo_fast.png";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const navigate = useNavigate();
+  const { unreadCount } = useNotifications();
+
+  const handleNotificationClick = () => {
+    navigate('/notificacoes');
+  };
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-muted/30">
@@ -32,16 +43,20 @@ export function MainLayout({ children }: MainLayoutProps) {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="relative" onClick={handleNotificationClick}>
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full text-xs flex items-center justify-center text-primary-foreground">
-                  2
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
-              </Button>
-              
-              <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
-                U
-              </div>
+              )}
+            </Button>
+
+            <img src={logo} alt="Logo Fast" className="w-8 h-8 object-contain" />
+
+            <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
+              U
+            </div>
             </div>
           </header>
 

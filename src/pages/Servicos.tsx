@@ -153,11 +153,12 @@ export default function Servicos() {
               Novo Serviço
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>{editingService ? "Editar Serviço" : "Cadastrar Novo Serviço"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSaveService} className="space-y-4">
+            <div className="flex-1 overflow-y-auto">
+              <form onSubmit={handleSaveService} className="space-y-4 pr-2">
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome do Serviço *</Label>
                 <Input
@@ -193,7 +194,7 @@ export default function Servicos() {
                   required
                 />
               </div>
-              <DialogFooter className="mt-4">
+              <DialogFooter className="mt-4 flex-shrink-0">
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
                   Cancelar
                 </Button>
@@ -201,7 +202,8 @@ export default function Servicos() {
                   {editingService ? "Salvar Alterações" : "Cadastrar Serviço"}
                 </Button>
               </DialogFooter>
-            </form>
+              </form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

@@ -152,11 +152,12 @@ export default function Materiais() {
               Novo Material
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>{editingMaterial ? "Editar Material" : "Cadastrar Novo Material"}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSaveMaterial} className="space-y-4">
+            <div className="flex-1 overflow-y-auto">
+              <form onSubmit={handleSaveMaterial} className="space-y-4 pr-2">
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome do Material *</Label>
                 <Input
@@ -191,7 +192,7 @@ export default function Materiais() {
                   required
                 />
               </div>
-              <DialogFooter className="mt-4">
+              <DialogFooter className="mt-4 flex-shrink-0">
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
                   Cancelar
                 </Button>
@@ -199,7 +200,8 @@ export default function Materiais() {
                   {editingMaterial ? "Salvar Alterações" : "Cadastrar Material"}
                 </Button>
               </DialogFooter>
-            </form>
+              </form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

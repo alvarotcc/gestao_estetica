@@ -1,18 +1,23 @@
 import { useState } from "react";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Car, 
-  Wrench, 
-  CheckSquare, 
-  Package, 
-  UserCheck, 
-  Calendar, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Users,
+  Car,
+  Wrench,
+  CheckSquare,
+  Package,
+  UserCheck,
+  Calendar,
+  BarChart3,
+  FileText,
+  DollarSign,
+  History,
+  Bell,
+  Settings,
   LogOut,
   Menu
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +31,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "../../assets/logo.png";
 
 const menuItems = [
@@ -34,7 +40,12 @@ const menuItems = [
   { title: "Veículos", url: "/veiculos", icon: Car },
   { title: "Serviços", url: "/servicos", icon: Wrench },
   { title: "Checklist", url: "/checklist", icon: CheckSquare },
+  { title: "Templates de Checklist", url: "/checklist-templates", icon: Settings },
   { title: "Materiais", url: "/materiais", icon: Package },
+  { title: "Ordens de Serviço", url: "/ordem-servico", icon: FileText },
+  { title: "Financeiro", url: "/financeiro", icon: DollarSign },
+  { title: "Histórico de Serviços", url: "/historico-servicos", icon: History },
+  { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Colaboradores", url: "/colaboradores", icon: UserCheck },
   { title: "Agenda", url: "/agenda", icon: Calendar },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
@@ -43,8 +54,15 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -101,8 +119,9 @@ export function AppSidebar() {
 
         {/* Logout Button */}
         <div className="p-4 border-t border-border/50">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
             className={`${collapsed ? 'w-10 h-10 p-0' : 'w-full'} text-secondary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors`}
           >
             <LogOut className={`w-4 h-4 ${!collapsed ? 'mr-2' : ''}`} />

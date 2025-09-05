@@ -1,103 +1,58 @@
-# TODO - Sistema de Gestão Estética
+# TODO - Application Review and Fixes
 
-## ✅ Checklist de Veículos - Implementação Completa
+## ✅ Completed Tasks
+- [x] Integrated notifications system with badge in MainLayout
+- [x] Created useNotifications hook for centralized state management
+- [x] Updated Notificacoes page to use shared hook
+- [x] Added "Mark All as Read" functionality
 
-### 1. Criação da Página Checklist
-- [x] Criado `src/pages/Checklist.tsx` com interface completa
-- [x] Implementado sistema de checklist abrangente com 5 categorias:
-  - Exterior (faróis, lanternas, lataria, pneus, etc.)
-  - Interior (painel, bancos, sistema de som, etc.)
-  - Motor (óleo, filtros, correias, bateria, etc.)
-  - Parte Inferior (escapamento, freios, suspensão, etc.)
-  - Documentação (CRLV, seguro, manual, etc.)
+## 🔧 Current Fixes Needed
 
-### 2. Funcionalidades Implementadas
-- [x] CRUD completo (Criar, Ler, Atualizar, Excluir checklists)
-- [x] Seleção de veículos existentes
-- [x] Status para cada item: OK, Atenção, Crítico, N/A
-- [x] Campo de observações para cada item
-- [x] Observações gerais do checklist
-- [x] Interface com abas para navegação entre categorias
-- [x] Busca e filtragem de checklists
-- [x] Resumo visual com badges de status
-- [x] Integração com Firebase Firestore
+### 1. Scrolling Issues in Dialog Forms
+- [ ] Clientes.tsx: Add scrolling to client creation/editing dialog
+- [ ] Servicos.tsx: Add scrolling to service creation/editing dialog
+- [ ] Materiais.tsx: Add scrolling to material creation/editing dialog
+- [ ] Colaboradores.tsx: Add scrolling to collaborator creation/editing dialog
 
-### 3. Integração com App.tsx
-- [x] Adicionado import do componente Checklist
-- [x] Substituído placeholder por componente funcional
-- [x] Rota `/checklist` agora totalmente operacional
+### 2. Button Functionality Issues
+- [ ] Fix "Eye" buttons across all pages (currently non-functional)
+- [ ] Test notification badge functionality
+- [ ] Verify all form submissions work correctly
+- [ ] Test CRUD operations on all pages
 
-### 4. Funcionalidades dos Botões
-- [x] Botão "Novo Checklist" - abre modal para criar checklist
-- [x] Botões de status (OK, Atenção, Crítico, N/A) - funcionais para cada item
-- [x] Botão "Salvar Checklist" - salva no Firestore
-- [x] Botão "Editar" - permite edição de checklists existentes
-- [x] Botão "Excluir" - remove checklist com confirmação
-- [x] Botão "Visualizar" - preparado para futura implementação
+### 3. UI/UX Improvements
+- [ ] Improve dialog responsiveness on smaller screens
+- [ ] Add loading states for async operations
+- [ ] Improve error handling and user feedback
+- [ ] Test all navigation links in sidebar
 
-## 🔄 Próximos Passos - Checklist
+### 4. Testing Checklist
+- [ ] Test all CRUD operations (Create, Read, Update, Delete)
+- [ ] Test search functionality on all pages
+- [ ] Test form validation and error messages
+- [ ] Test notification system (badge, mark as read, mark all)
+- [ ] Test responsive design on different screen sizes
+- [ ] Test sidebar navigation and collapse functionality
 
-### Validação e Testes
-- [ ] Testar criação de novos checklists
-- [ ] Testar edição de checklists existentes
-- [ ] Verificar salvamento correto no Firestore
-- [ ] Testar busca e filtragem
-- [ ] Verificar responsividade em diferentes dispositivos
+## 📋 Implementation Plan
 
-### Melhorias Opcionais
-- [ ] Implementar visualização detalhada de checklist
-- [ ] Adicionar exportação de checklist em PDF
-- [ ] Implementar notificações de sucesso/erro
-- [ ] Adicionar validação de formulário
-- [ ] Melhorar UX com loading states
+### Phase 1: Scrolling Fixes
+1. Update Clientes.tsx dialog with proper scrolling
+2. Update Servicos.tsx dialog with proper scrolling
+3. Update Materiais.tsx dialog with proper scrolling
+4. Update Colaboradores.tsx dialog with proper scrolling
 
----
+### Phase 2: Button Functionality
+1. Implement "View" functionality for Eye buttons
+2. Test and fix any broken buttons
+3. Add proper loading states
 
-## ✅ Concluído - Refatoração da Página de Agenda
+### Phase 3: UI/UX Polish
+1. Improve responsive design
+2. Add better error handling
+3. Test all user flows
 
-### 1. Atualização da Interface Appointment
-- [x] Removidos campos desnecessários: `clienteNome`, `veiculoPlaca`, `servicoNome`, `colaboradorNome`
-- [x] Mantidos apenas os campos de ID: `clienteId`, `veiculoId`, `servicoId`, `colaboradorId`
-
-### 2. Atualização do Estado Inicial
-- [x] Atualizado `initialAppointmentState` para refletir apenas os campos de ID
-- [x] Removidos campos de nome que não existem mais na interface
-
-### 3. Atualização da Tabela
-- [x] Substituídas referências diretas aos campos de nome por chamadas das funções auxiliares
-- [x] Mantida funcionalidade de exibição correta dos nomes na tabela
-
-### 4. Atualização do Formulário
-- [x] Substituídos campos de Input por Selects para:
-  - Cliente (clienteId)
-  - Veículo (veiculoId)
-  - Serviço (servicoId)
-  - Colaborador (colaboradorId)
-- [x] Adicionado atributo `required` aos Selects obrigatórios
-- [x] Mantidos campos de data, hora e status como Select/Input
-
-### 5. Funções Auxiliares
-- [x] Mantidas funções `getClientName`, `getVehiclePlate`, `getServiceName`, `getCollaboratorName`
-- [x] Funções continuam funcionando corretamente para buscar nomes pelos IDs
-
-## 🔄 Próximos Passos - Agenda
-
-### Validação e Testes
-- [ ] Testar criação de novos agendamentos
-- [ ] Testar edição de agendamentos existentes
-- [ ] Verificar se os dados estão sendo salvos corretamente no Firestore
-- [ ] Testar funcionalidade de busca/filtragem
-- [ ] Verificar se não há erros de TypeScript
-
-### Melhorias Opcionais
-- [ ] Adicionar validação de formulário mais robusta
-- [ ] Implementar validação de conflitos de horário
-- [ ] Adicionar notificações de sucesso/erro
-- [ ] Melhorar UX do formulário (loading states, etc.)
-
-## 📝 Notas Técnicas
-
-- A estrutura de dados no Firestore permanece a mesma (apenas IDs)
-- As funções auxiliares garantem que os nomes sejam exibidos corretamente na UI
-- O formulário agora força a seleção de entidades existentes em vez de permitir entrada livre
-- Mantida compatibilidade com dados existentes no Firestore
+### Phase 4: Testing
+1. Comprehensive testing of all features
+2. Bug fixes based on testing results
+3. Performance optimizations
