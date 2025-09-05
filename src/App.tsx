@@ -10,7 +10,8 @@ import Clientes from "./pages/Clientes";
 import Veiculos from "./pages/Veiculos";
 import Servicos from "./pages/Servicos";
 import Materiais from "./pages/Materiais";
-import { Agenda } from "./pages/Agenda";
+import Agenda from "./pages/Agenda";
+import Checklist from "./pages/Checklist";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient();
@@ -44,10 +45,7 @@ const App = () => (
           } />
           <Route path="/checklist" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Checklist de Veículos</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Checklist />
             </MainLayout>
           } />
           <Route path="/materiais" element={
@@ -65,10 +63,7 @@ const App = () => (
           } />
           <Route path="/agenda" element={
             <MainLayout>
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Agenda de Agendamentos</h1>
-                <p className="text-muted-foreground mt-2">Em desenvolvimento...</p>
-              </div>
+              <Agenda />
             </MainLayout>
           } />
           <Route path="/relatorios" element={

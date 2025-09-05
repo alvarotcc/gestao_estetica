@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -18,8 +19,23 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface Vehicle {
@@ -28,15 +44,43 @@ interface Vehicle {
   modelo: string;
   placa: string;
   clienteId: string;
+  clienteNome?: string;
+}
+
+interface Client {
+  id: string;
+  nome: string;
 }
 
 export default function Veiculos() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [newVehicle, setNewVehicle] = useState({
+    marca: "",
+    modelo: "",
+    placa: "",
+    clienteId: ""
+  });
 
   useEffect(() => {
+    // Buscar clientes
+    const clientsCollection = collection(db, "clientes");
+    const unsubscribeClients = onSnapshot(clientsCollection, (snapshot) => {
+      const clientsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        nome: doc.data().nome
+      })) as Client[];
+      setClients(clientsData);
+    }, (error) => {
+      console.error("Erro ao buscar clientes: ", error);
+    });
+
+    // Buscar veículos
     const vehiclesCollection = collection(db, "veiculos");
-    const unsubscribe = onSnapshot(vehiclesCollection, (snapshot) => {
+    const unsubscribeVehicles = onSnapshot(vehiclesCollection, (snapshot) => {
       const vehiclesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -46,7 +90,10 @@ export default function Veiculos() {
       console.error("Erro ao buscar veículos: ", error);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeClients();
+      unsubscribeVehicles();
+    };
   }, []);
 
   const filteredVehicles = vehicles.filter(vehicle =>
@@ -54,6 +101,84 @@ export default function Veiculos() {
     vehicle.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.placa.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (editingVehicle) {
+      setEditingVehicle(prev => prev ? { ...prev, [name]: value } : null);
+    } else {
+      setNewVehicle({ ...newVehicle, [name]: value });
+    }
+  };
+
+  const handleClientChange = (value: string) => {
+    if (editingVehicle) {
+      setEditingVehicle(prev => prev ? { ...prev, clienteId: value } : null);
+    } else {
+      setNewVehicle({ ...newVehicle, clienteId: value });
+    }
+  };
+
+  const handleOpenDialog = (vehicle: Vehicle | null = null) => {
+    if (vehicle) {
+      setEditingVehicle(vehicle);
+    } else {
+      setNewVehicle({
+        marca: "",
+        modelo: "",
+        placa: "",
+        clienteId: ""
+      });
+      setEditingVehicle(null);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setNewVehicle({
+      marca: "",
+      modelo: "",
+      placa: "",
+      clienteId: ""
+    });
+    setEditingVehicle(null);
+  };
+
+  const handleSaveVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingVehicle) {
+      try {
+        const vehicleDoc = doc(db, "veiculos", editingVehicle.id);
+        const { id, ...vehicleData } = editingVehicle;
+        await updateDoc(vehicleDoc, vehicleData);
+        console.log("Veículo atualizado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao atualizar veículo:", error);
+      }
+    } else {
+      try {
+        await addDoc(collection(db, "veiculos"), newVehicle);
+        console.log("Veículo adicionado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao adicionar veículo:", error);
+      }
+    }
+  };
+
+  const handleDeleteVehicle = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este veículo?")) {
+      try {
+        const vehicleDoc = doc(db, "veiculos", id);
+        await deleteDoc(vehicleDoc);
+        console.log("Veículo excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir veículo:", error);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -64,10 +189,81 @@ export default function Veiculos() {
           <p className="text-muted-foreground">Cadastre e gerencie os veículos de seus clientes</p>
         </div>
         
-        <Button className="bg-gradient-primary hover:shadow-glow transition-all">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Veículo
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary hover:shadow-glow transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Veículo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingVehicle ? "Editar Veículo" : "Cadastrar Novo Veículo"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveVehicle} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="clienteId">Cliente *</Label>
+                <Select
+                  value={editingVehicle?.clienteId || newVehicle.clienteId}
+                  onValueChange={handleClientChange}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="marca">Marca *</Label>
+                <Input
+                  id="marca"
+                  name="marca"
+                  value={editingVehicle?.marca || newVehicle.marca}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Toyota, Honda, Ford"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="modelo">Modelo *</Label>
+                <Input
+                  id="modelo"
+                  name="modelo"
+                  value={editingVehicle?.modelo || newVehicle.modelo}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Corolla, Civic, Focus"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="placa">Placa *</Label>
+                <Input
+                  id="placa"
+                  name="placa"
+                  value={editingVehicle?.placa || newVehicle.placa}
+                  onChange={handleInputChange}
+                  placeholder="Ex: ABC-1234"
+                  required
+                />
+              </div>
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-gradient-primary">
+                  {editingVehicle ? "Salvar Alterações" : "Cadastrar Veículo"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search Bar */}
@@ -108,30 +304,32 @@ export default function Veiculos() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredVehicles.map((vehicle) => (
-                  <TableRow key={vehicle.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      {/* TODO: Buscar nome do cliente por clienteId */}
-                      <div className="font-medium">{vehicle.clienteId}</div>
-                    </TableCell>
-                    <TableCell>{vehicle.marca}</TableCell>
-                    <TableCell>{vehicle.modelo}</TableCell>
-                    <TableCell>{vehicle.placa}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredVehicles.map((vehicle) => {
+                  const client = clients.find(c => c.id === vehicle.clienteId);
+                  return (
+                    <TableRow key={vehicle.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="font-medium">{client ? client.nome : vehicle.clienteId}</div>
+                      </TableCell>
+                      <TableCell>{vehicle.marca}</TableCell>
+                      <TableCell>{vehicle.modelo}</TableCell>
+                      <TableCell>{vehicle.placa}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleOpenDialog(vehicle)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDeleteVehicle(vehicle.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

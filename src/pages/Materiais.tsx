@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -18,7 +19,15 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { collection, onSnapshot } from "firebase/firestore";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface Material {
@@ -31,6 +40,13 @@ interface Material {
 export default function Materiais() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [newMaterial, setNewMaterial] = useState({
+    nome: "",
+    quantidade: 0,
+    unidade: ""
+  });
 
   useEffect(() => {
     const materialsCollection = collection(db, "materiais");
@@ -52,6 +68,74 @@ export default function Materiais() {
     material.unidade.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (editingMaterial) {
+      setEditingMaterial(prev => prev ? { ...prev, [name]: value } : null);
+    } else {
+      setNewMaterial({ ...newMaterial, [name]: value });
+    }
+  };
+
+  const handleOpenDialog = (material: Material | null = null) => {
+    if (material) {
+      setEditingMaterial(material);
+    } else {
+      setNewMaterial({
+        nome: "",
+        quantidade: 0,
+        unidade: ""
+      });
+      setEditingMaterial(null);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setNewMaterial({
+      nome: "",
+      quantidade: 0,
+      unidade: ""
+    });
+    setEditingMaterial(null);
+  };
+
+  const handleSaveMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingMaterial) {
+      try {
+        const materialDoc = doc(db, "materiais", editingMaterial.id);
+        const { id, ...materialData } = editingMaterial;
+        await updateDoc(materialDoc, materialData);
+        console.log("Material atualizado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao atualizar material:", error);
+      }
+    } else {
+      try {
+        await addDoc(collection(db, "materiais"), newMaterial);
+        console.log("Material adicionado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao adicionar material:", error);
+      }
+    }
+  };
+
+  const handleDeleteMaterial = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este material?")) {
+      try {
+        const materialDoc = doc(db, "materiais", id);
+        await deleteDoc(materialDoc);
+        console.log("Material excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir material:", error);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -61,10 +145,63 @@ export default function Materiais() {
           <p className="text-muted-foreground">Controle o estoque de materiais</p>
         </div>
         
-        <Button className="bg-gradient-primary hover:shadow-glow transition-all">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Material
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary hover:shadow-glow transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Material
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingMaterial ? "Editar Material" : "Cadastrar Novo Material"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveMaterial} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome do Material *</Label>
+                <Input
+                  id="nome"
+                  name="nome"
+                  value={editingMaterial?.nome || newMaterial.nome}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Shampoo Automotivo"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantidade">Quantidade *</Label>
+                <Input
+                  id="quantidade"
+                  name="quantidade"
+                  type="number"
+                  value={editingMaterial?.quantidade || newMaterial.quantidade}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unidade">Unidade *</Label>
+                <Input
+                  id="unidade"
+                  name="unidade"
+                  value={editingMaterial?.unidade || newMaterial.unidade}
+                  onChange={handleInputChange}
+                  placeholder="Ex: litros, unidades"
+                  required
+                />
+              </div>
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-gradient-primary">
+                  {editingMaterial ? "Salvar Alterações" : "Cadastrar Material"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search Bar */}
@@ -117,10 +254,10 @@ export default function Materiais() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleOpenDialog(material)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDeleteMaterial(material.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

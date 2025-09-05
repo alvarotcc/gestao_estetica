@@ -1,13 +1,15 @@
+// src/pages/Colaboradores.tsx
 import { useState, useEffect } from "react";
-import { UserCheck, Plus, Search, Edit, Trash2 } from "lucide-react";
+import { User, Plus, Search, Edit, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -16,11 +18,18 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-interface Employee {
+interface Colaborador {
   id: string;
   nome: string;
   cargo: string;
@@ -28,26 +37,26 @@ interface Employee {
   email: string;
 }
 
-const initialEmployeeState = {
-  nome: "",
-  cargo: "",
-  telefone: "",
-  email: ""
-};
-
 export default function Colaboradores() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [newEmployee, setNewEmployee] = useState(initialEmployeeState);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingColaborador, setEditingColaborador] = useState<Colaborador | null>(null);
+  const [newColaborador, setNewColaborador] = useState({
+    nome: "",
+    cargo: "",
+    telefone: "",
+    email: ""
+  });
 
   useEffect(() => {
-    const employeesCollection = collection(db, "colaboradores");
-    const unsubscribe = onSnapshot(employeesCollection, (snapshot) => {
-      const employeesData = snapshot.docs.map(doc => ({
+    const colaboradoresCollection = collection(db, "colaboradores");
+    const unsubscribe = onSnapshot(colaboradoresCollection, (snapshot) => {
+      const colaboradoresData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as Employee[];
-      setEmployees(employeesData);
+      })) as Colaborador[];
+      setColaboradores(colaboradoresData);
     }, (error) => {
       console.error("Erro ao buscar colaboradores: ", error);
     });
@@ -55,25 +64,80 @@ export default function Colaboradores() {
     return () => unsubscribe();
   }, []);
 
-  const filteredEmployees = employees.filter(employee =>
-    employee.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.cargo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.telefone.includes(searchTerm)
+  const filteredColaboradores = colaboradores.filter(colaborador =>
+    colaborador.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    colaborador.cargo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    colaborador.telefone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    colaborador.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setNewEmployee({ ...newEmployee, [id]: value });
+    const { name, value } = e.target;
+    if (editingColaborador) {
+      setEditingColaborador(prev => prev ? { ...prev, [name]: value } : null);
+    } else {
+      setNewColaborador({ ...newColaborador, [name]: value });
+    }
   };
-  
-  const handleAddEmployee = async (e: React.FormEvent) => {
+
+  const handleOpenDialog = (colaborador: Colaborador | null = null) => {
+    if (colaborador) {
+      setEditingColaborador(colaborador);
+    } else {
+      setNewColaborador({
+        nome: "",
+        cargo: "",
+        telefone: "",
+        email: ""
+      });
+      setEditingColaborador(null);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setNewColaborador({
+      nome: "",
+      cargo: "",
+      telefone: "",
+      email: ""
+    });
+    setEditingColaborador(null);
+  };
+
+  const handleSaveColaborador = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await addDoc(collection(db, "colaboradores"), newEmployee);
-      setNewEmployee(initialEmployeeState); // Clear form
-      console.log("Colaborador adicionado com sucesso!");
-    } catch (error) {
-      console.error("Erro ao adicionar colaborador:", error);
+    if (editingColaborador) {
+      try {
+        const colaboradorDoc = doc(db, "colaboradores", editingColaborador.id);
+        const { id, ...colaboradorData } = editingColaborador;
+        await updateDoc(colaboradorDoc, colaboradorData);
+        console.log("Colaborador atualizado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao atualizar colaborador:", error);
+      }
+    } else {
+      try {
+        await addDoc(collection(db, "colaboradores"), newColaborador);
+        console.log("Colaborador adicionado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao adicionar colaborador:", error);
+      }
+    }
+  };
+
+  const handleDeleteColaborador = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este colaborador?")) {
+      try {
+        const colaboradorDoc = doc(db, "colaboradores", id);
+        await deleteDoc(colaboradorDoc);
+        console.log("Colaborador excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir colaborador:", error);
+      }
     }
   };
 
@@ -83,13 +147,77 @@ export default function Colaboradores() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestão de Colaboradores</h1>
-          <p className="text-muted-foreground">Gerencie a equipe de colaboradores</p>
+          <p className="text-muted-foreground">Cadastre e gerencie seus colaboradores</p>
         </div>
         
-        <Button className="bg-gradient-primary hover:shadow-glow transition-all">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Colaborador
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => handleOpenDialog()} className="bg-gradient-primary hover:shadow-glow transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Colaborador
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingColaborador ? "Editar Colaborador" : "Cadastrar Novo Colaborador"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveColaborador} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome *</Label>
+                <Input
+                  id="nome"
+                  name="nome"
+                  value={editingColaborador?.nome || newColaborador.nome}
+                  onChange={handleInputChange}
+                  placeholder="Nome completo"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cargo">Cargo *</Label>
+                <Input
+                  id="cargo"
+                  name="cargo"
+                  value={editingColaborador?.cargo || newColaborador.cargo}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Lavador, Polidor, Gerente"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="telefone">Telefone *</Label>
+                <Input
+                  id="telefone"
+                  name="telefone"
+                  value={editingColaborador?.telefone || newColaborador.telefone}
+                  onChange={handleInputChange}
+                  placeholder="(11) 99999-9999"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={editingColaborador?.email || newColaborador.email}
+                  onChange={handleInputChange}
+                  placeholder="email@exemplo.com"
+                  required
+                />
+              </div>
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-gradient-primary">
+                  {editingColaborador ? "Salvar Alterações" : "Cadastrar Colaborador"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search Bar */}
@@ -98,7 +226,7 @@ export default function Colaboradores() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Buscar por nome, cargo ou telefone..."
+              placeholder="Buscar por nome, cargo, telefone ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -107,14 +235,12 @@ export default function Colaboradores() {
         </CardContent>
       </Card>
 
-      {/* Employees Table */}
+      {/* Colaboradores Table */}
       <Card className="border-0 shadow-card">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Lista de Colaboradores ({filteredEmployees.length})</span>
-            <Badge variant="secondary" className="text-sm">
-              Total: {employees.length} colaboradores
-            </Badge>
+            <span>Lista de Colaboradores ({filteredColaboradores.length})</span>
+            <span className="text-sm text-muted-foreground">Total: {colaboradores.length} colaboradores</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -124,25 +250,24 @@ export default function Colaboradores() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Cargo</TableHead>
-                  <TableHead>Contato</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="font-medium">{employee.nome}</div>
-                      <div className="text-sm text-muted-foreground">{employee.email}</div>
-                    </TableCell>
-                    <TableCell>{employee.cargo}</TableCell>
-                    <TableCell>{employee.telefone}</TableCell>
+                {filteredColaboradores.map((colaborador) => (
+                  <TableRow key={colaborador.id} className="hover:bg-muted/50">
+                    <TableCell>{colaborador.nome}</TableCell>
+                    <TableCell>{colaborador.cargo}</TableCell>
+                    <TableCell>{colaborador.telefone}</TableCell>
+                    <TableCell>{colaborador.email}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleOpenDialog(colaborador)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDeleteColaborador(colaborador.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

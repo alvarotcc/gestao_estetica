@@ -147,9 +147,9 @@ const handleSaveClient = async (e: React.FormEvent) => {
           <p className="text-muted-foreground">Cadastre e gerencie seus clientes</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} className="bg-gradient-primary hover:shadow-glow transition-all">
+            <Button className="bg-gradient-primary hover:shadow-glow transition-all">
               <Plus className="w-4 h-4 mr-2" />
               Novo Cliente
             </Button>

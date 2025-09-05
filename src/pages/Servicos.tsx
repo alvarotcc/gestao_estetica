@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -18,7 +20,15 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { collection, onSnapshot } from "firebase/firestore";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface Service {
@@ -31,6 +41,13 @@ interface Service {
 export default function Servicos() {
   const [services, setServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [newService, setNewService] = useState({
+    nome: "",
+    descricao: "",
+    preco: 0
+  });
 
   useEffect(() => {
     const servicesCollection = collection(db, "servicos");
@@ -52,6 +69,74 @@ export default function Servicos() {
     service.descricao.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (editingService) {
+      setEditingService(prev => prev ? { ...prev, [name]: value } : null);
+    } else {
+      setNewService({ ...newService, [name]: value });
+    }
+  };
+
+  const handleOpenDialog = (service: Service | null = null) => {
+    if (service) {
+      setEditingService(service);
+    } else {
+      setNewService({
+        nome: "",
+        descricao: "",
+        preco: 0
+      });
+      setEditingService(null);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setNewService({
+      nome: "",
+      descricao: "",
+      preco: 0
+    });
+    setEditingService(null);
+  };
+
+  const handleSaveService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingService) {
+      try {
+        const serviceDoc = doc(db, "servicos", editingService.id);
+        const { id, ...serviceData } = editingService;
+        await updateDoc(serviceDoc, serviceData);
+        console.log("Serviço atualizado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao atualizar serviço:", error);
+      }
+    } else {
+      try {
+        await addDoc(collection(db, "servicos"), newService);
+        console.log("Serviço adicionado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao adicionar serviço:", error);
+      }
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este serviço?")) {
+      try {
+        const serviceDoc = doc(db, "servicos", id);
+        await deleteDoc(serviceDoc);
+        console.log("Serviço excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir serviço:", error);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -61,10 +146,64 @@ export default function Servicos() {
           <p className="text-muted-foreground">Gerencie os serviços oferecidos</p>
         </div>
         
-        <Button className="bg-gradient-primary hover:shadow-glow transition-all">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Serviço
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary hover:shadow-glow transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Serviço
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingService ? "Editar Serviço" : "Cadastrar Novo Serviço"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveService} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome do Serviço *</Label>
+                <Input
+                  id="nome"
+                  name="nome"
+                  value={editingService?.nome || newService.nome}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Lavagem Completa"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descricao">Descrição *</Label>
+                <Textarea
+                  id="descricao"
+                  name="descricao"
+                  value={editingService?.descricao || newService.descricao}
+                  onChange={handleInputChange}
+                  placeholder="Descrição detalhada do serviço"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="preco">Preço (R$) *</Label>
+                <Input
+                  id="preco"
+                  name="preco"
+                  type="number"
+                  step="0.01"
+                  value={editingService?.preco || newService.preco}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-gradient-primary">
+                  {editingService ? "Salvar Alterações" : "Cadastrar Serviço"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search Bar */}
@@ -117,10 +256,10 @@ export default function Servicos() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleOpenDialog(service)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDeleteService(service.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
