@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -185,10 +186,10 @@ export default function Relatorios() {
 
     if (fromDate && aptDate < fromDate) return false;
     if (toDate && aptDate > toDate) return false;
-    if (selectedClient && selectedClient !== "" && apt.clienteId !== selectedClient) return false;
-    if (selectedService && selectedService !== "" && apt.servicoId !== selectedService) return false;
-    if (selectedEmployee && selectedEmployee !== "" && apt.colaboradorId !== selectedEmployee) return false;
-    if (selectedVehicle && selectedVehicle !== "" && apt.veiculoId !== selectedVehicle) return false;
+    if (selectedClient && selectedClient !== "undefined" && apt.clienteId !== selectedClient) return false;
+    if (selectedService && selectedService !== "undefined" && apt.servicoId !== selectedService) return false;
+    if (selectedEmployee && selectedEmployee !== "undefined" && apt.colaboradorId !== selectedEmployee) return false;
+    if (selectedVehicle && selectedVehicle !== "undefined" && apt.veiculoId !== selectedVehicle) return false;
     return true;
   });
 
@@ -268,47 +269,236 @@ export default function Relatorios() {
 
   // Funções para os botões
   const handleGeneratePDF = () => {
-    const doc = new jsPDF();
+    setDialogOpen(true);
+  };
+
+  const renderPDFContent = (doc: jsPDF) => {
     doc.setFontSize(20);
     doc.text("Relatório de Gestão Estética", 20, 20);
 
     doc.setFontSize(12);
     doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 20, 40);
 
-    doc.text("Filtros Aplicados:", 20, 60);
-    if (dateFrom) doc.text(`Data Início: ${dateFrom}`, 20, 70);
-    if (dateTo) doc.text(`Data Fim: ${dateTo}`, 20, 80);
+    let y = 60;
+    doc.text("Filtros Aplicados:", 20, y);
+    y += 10;
+
+    if (dateFrom) {
+      doc.text(`Data Início: ${dateFrom}`, 20, y);
+      y += 10;
+    }
+    if (dateTo) {
+      doc.text(`Data Fim: ${dateTo}`, 20, y);
+      y += 10;
+    }
     if (selectedClient) {
       const client = clients.find(c => c.id === selectedClient);
-      doc.text(`Cliente: ${client?.nome}`, 20, 90);
+      doc.text(`Cliente: ${client?.nome}`, 20, y);
+      y += 10;
     }
     if (selectedService) {
       const service = services.find(s => s.id === selectedService);
-      doc.text(`Serviço: ${service?.nome}`, 20, 100);
+      doc.text(`Serviço: ${service?.nome}`, 20, y);
+      y += 10;
     }
     if (selectedEmployee) {
       const employee = employees.find(e => e.id === selectedEmployee);
-      doc.text(`Colaborador: ${employee?.nome}`, 20, 110);
+      doc.text(`Colaborador: ${employee?.nome}`, 20, y);
+      y += 10;
     }
     if (selectedVehicle) {
       const vehicle = vehicles.find(v => v.id === selectedVehicle);
-      doc.text(`Veículo: ${vehicle?.placa} - ${vehicle?.marca} ${vehicle?.modelo}`, 20, 120);
+      doc.text(`Veículo: ${vehicle?.placa} - ${vehicle?.marca} ${vehicle?.modelo}`, 20, y);
+      y += 10;
     }
 
-    let y = 140;
-    doc.text("Agendamentos Filtrados:", 20, y);
     y += 10;
+    doc.text("Agendamentos Filtrados:", 20, y);
+    y += 15;
 
     filteredAppointments.forEach((apt, index) => {
-      if (y > 270) {
+      if (y > 250) {
         doc.addPage();
         y = 20;
       }
-      doc.text(`${index + 1}. ${apt.clienteNome} - ${apt.servicoNome} - ${apt.data} - ${apt.status}`, 20, y);
-      y += 10;
+
+      doc.setFontSize(11);
+      doc.text(`${index + 1}. Cliente: ${apt.clienteNome}`, 20, y);
+      y += 8;
+      doc.text(`   Serviço: ${apt.servicoNome}`, 20, y);
+      y += 8;
+      doc.text(`   Veículo: ${apt.veiculoPlaca}`, 20, y);
+      y += 8;
+      doc.text(`   Colaborador: ${apt.colaboradorNome}`, 20, y);
+      y += 8;
+      doc.text(`   Data: ${apt.data} - Hora: ${apt.hora}`, 20, y);
+      y += 8;
+      doc.text(`   Status: ${apt.status}`, 20, y);
+      if (apt.observacoes) {
+        y += 8;
+        doc.text(`   Observações: ${apt.observacoes}`, 20, y);
+      }
+      y += 15;
     });
 
-    doc.save('relatorio.pdf');
+    // Adicionar métricas no final
+    if (y > 220) {
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setFontSize(12);
+    y += 10;
+    doc.text("Métricas:", 20, y);
+    y += 15;
+
+    doc.setFontSize(10);
+    doc.text(`Total de Clientes: ${totalClients}`, 20, y);
+    y += 8;
+    doc.text(`Total de Veículos: ${totalVehicles}`, 20, y);
+    y += 8;
+    doc.text(`Total de Serviços: ${totalServices}`, 20, y);
+    y += 8;
+    doc.text(`Agendamentos Filtrados: ${filteredAppointments.length}`, 20, y);
+    y += 8;
+    doc.text(`Receita Estimada: R$ ${estimatedRevenue.toLocaleString('pt-BR')}`, 20, y);
+    y += 8;
+    doc.text(`Total de Colaboradores: ${totalEmployees}`, 20, y);
+  };
+
+  const handlePrintReport = () => {
+    // Criar uma nova janela para impressão
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+
+    if (printWindow) {
+      const reportContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Relatório de Gestão Estética</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              line-height: 1.6;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 20px;
+            }
+            .header h1 {
+              color: #333;
+              margin: 0;
+              font-size: 24px;
+            }
+            .header p {
+              color: #666;
+              margin: 5px 0;
+            }
+            .section {
+              margin-bottom: 20px;
+            }
+            .section h3 {
+              color: #333;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 5px;
+              margin-bottom: 10px;
+            }
+            .appointment {
+              border: 1px solid #ddd;
+              padding: 15px;
+              margin-bottom: 15px;
+              background-color: #f9f9f9;
+            }
+            .appointment strong {
+              display: inline-block;
+              width: 120px;
+            }
+            .metrics {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-top: 30px;
+            }
+            .metric-item {
+              background-color: #f5f5f5;
+              padding: 15px;
+              border-radius: 5px;
+            }
+            @media print {
+              body { margin: 0; }
+              .appointment { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Relatório de Gestão Estética</h1>
+            <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+          </div>
+
+          <div class="section">
+            <h3>Filtros Aplicados:</h3>
+            ${dateFrom ? `<p><strong>Data Início:</strong> ${dateFrom}</p>` : ''}
+            ${dateTo ? `<p><strong>Data Fim:</strong> ${dateTo}</p>` : ''}
+            ${selectedClient ? `<p><strong>Cliente:</strong> ${clients.find(c => c.id === selectedClient)?.nome}</p>` : ''}
+            ${selectedService ? `<p><strong>Serviço:</strong> ${services.find(s => s.id === selectedService)?.nome}</p>` : ''}
+            ${selectedEmployee ? `<p><strong>Colaborador:</strong> ${employees.find(e => e.id === selectedEmployee)?.nome}</p>` : ''}
+            ${selectedVehicle ? `<p><strong>Veículo:</strong> ${vehicles.find(v => v.id === selectedVehicle)?.placa} - ${vehicles.find(v => v.id === selectedVehicle)?.marca} ${vehicles.find(v => v.id === selectedVehicle)?.modelo}</p>` : ''}
+          </div>
+
+          <div class="section">
+            <h3>Agendamentos Filtrados:</h3>
+            ${filteredAppointments.length > 0 ? filteredAppointments.map((apt, index) => `
+              <div class="appointment">
+                <p><strong>${index + 1}. Cliente:</strong> ${apt.clienteNome}</p>
+                <p><strong>Serviço:</strong> ${apt.servicoNome}</p>
+                <p><strong>Veículo:</strong> ${apt.veiculoPlaca}</p>
+                <p><strong>Colaborador:</strong> ${apt.colaboradorNome}</p>
+                <p><strong>Data:</strong> ${apt.data} - <strong>Hora:</strong> ${apt.hora}</p>
+                <p><strong>Status:</strong> ${apt.status}</p>
+                ${apt.observacoes ? `<p><strong>Observações:</strong> ${apt.observacoes}</p>` : ''}
+              </div>
+            `).join('') : '<p>Nenhum agendamento encontrado com os filtros aplicados.</p>'}
+          </div>
+
+          <div class="metrics">
+            <div class="metric-item">
+              <h4>Métricas Gerais:</h4>
+              <p><strong>Total de Clientes:</strong> ${totalClients}</p>
+              <p><strong>Total de Veículos:</strong> ${totalVehicles}</p>
+              <p><strong>Total de Serviços:</strong> ${totalServices}</p>
+            </div>
+            <div class="metric-item">
+              <h4>Métricas Filtradas:</h4>
+              <p><strong>Agendamentos Filtrados:</strong> ${filteredAppointments.length}</p>
+              <p><strong>Receita Estimada:</strong> R$ ${estimatedRevenue.toLocaleString('pt-BR')}</p>
+              <p><strong>Total de Colaboradores:</strong> ${totalEmployees}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(reportContent);
+      printWindow.document.close();
+
+      // Aguardar o conteúdo carregar antes de mostrar a janela de impressão
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+
+    setDialogOpen(false);
+  };
+
+  const handleSavePDF = () => {
+    const doc = new jsPDF();
+    renderPDFContent(doc);
+    doc.save('relatorio_gestao_estetica.pdf');
+    setDialogOpen(false);
   };
 
   const handleExportData = () => {
@@ -522,7 +712,7 @@ export default function Relatorios() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -552,7 +742,7 @@ export default function Relatorios() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Receita']} />
+              <Tooltip formatter={(value: any) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Receita']} />
               <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
@@ -600,6 +790,103 @@ export default function Relatorios() {
           </CardContent>
         </Card>
       </div>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Visualização do Relatório PDF</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <h2 className="text-xl font-bold mb-4">Relatório de Gestão Estética</h2>
+              <p className="text-sm text-gray-600 mb-4">Data: {new Date().toLocaleDateString('pt-BR')}</p>
+
+              <h3 className="font-semibold mb-2">Filtros Aplicados:</h3>
+              <div className="text-sm space-y-1 mb-4">
+                {dateFrom && <p>Data Início: {dateFrom}</p>}
+                {dateTo && <p>Data Fim: {dateTo}</p>}
+                {selectedClient && (
+                  <p>Cliente: {clients.find(c => c.id === selectedClient)?.nome}</p>
+                )}
+                {selectedService && (
+                  <p>Serviço: {services.find(s => s.id === selectedService)?.nome}</p>
+                )}
+                {selectedEmployee && (
+                  <p>Colaborador: {employees.find(e => e.id === selectedEmployee)?.nome}</p>
+                )}
+                {selectedVehicle && (
+                  <p>Veículo: {vehicles.find(v => v.id === selectedVehicle)?.placa} - {vehicles.find(v => v.id === selectedVehicle)?.marca} {vehicles.find(v => v.id === selectedVehicle)?.modelo}</p>
+                )}
+              </div>
+
+              <h3 className="font-semibold mb-2">Agendamentos Filtrados:</h3>
+              <div className="text-sm space-y-2 max-h-60 overflow-y-auto">
+                {filteredAppointments.length > 0 ? (
+                  filteredAppointments.map((apt, index) => (
+                    <div key={apt.id} className="border rounded p-2 bg-white">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <strong>Cliente:</strong> {apt.clienteNome}
+                        </div>
+                        <div>
+                          <strong>Serviço:</strong> {apt.servicoNome}
+                        </div>
+                        <div>
+                          <strong>Veículo:</strong> {apt.veiculoPlaca}
+                        </div>
+                        <div>
+                          <strong>Colaborador:</strong> {apt.colaboradorNome}
+                        </div>
+                        <div>
+                          <strong>Data:</strong> {apt.data}
+                        </div>
+                        <div>
+                          <strong>Hora:</strong> {apt.hora}
+                        </div>
+                        <div>
+                          <strong>Status:</strong> {apt.status}
+                        </div>
+                        {apt.observacoes && (
+                          <div className="col-span-2">
+                            <strong>Observações:</strong> {apt.observacoes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p>Nenhum agendamento encontrado com os filtros aplicados.</p>
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t">
+                <h3 className="font-semibold mb-2">Métricas:</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p>Total de Clientes: {totalClients}</p>
+                    <p>Total de Veículos: {totalVehicles}</p>
+                    <p>Total de Serviços: {totalServices}</p>
+                  </div>
+                  <div>
+                    <p>Agendamentos Filtrados: {filteredAppointments.length}</p>
+                    <p>Receita Estimada: R$ {estimatedRevenue.toLocaleString('pt-BR')}</p>
+                    <p>Total de Colaboradores: {totalEmployees}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSavePDF}>
+              Baixar PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

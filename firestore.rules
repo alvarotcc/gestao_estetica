@@ -1,8 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Permitir leitura e escrita para usuários autenticados com role 'admin' ou 'user'
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null && (
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role in ['admin', 'user']
+      );
     }
   }
 }

@@ -390,6 +390,96 @@ async function seedDatabase() {
     }
     console.log("Colaboradores adicionados com sucesso!");
 
+    // Seed Fornecedores
+    const fornecedoresRef = collection(db, "fornecedores");
+    const fornecedoresData = [
+      {
+        nome: "Auto Peças Silva Ltda",
+        telefone: "(11) 3333-1111",
+        email: "contato@autopecassilva.com.br",
+        cnpj: "12.345.678/0001-90",
+        endereco: "Rua das Peças, 123 - Centro, São Paulo - SP",
+        contato: "João Silva",
+        categoria: "Materiais",
+        observacoes: "Fornecedor de peças automotivas, entrega rápida"
+      },
+      {
+        nome: "Produtos de Limpeza Premium",
+        telefone: "(11) 3333-2222",
+        email: "vendas@limpezapremium.com.br",
+        cnpj: "98.765.432/0001-10",
+        endereco: "Av. Industrial, 456 - Distrito Industrial, São Paulo - SP",
+        contato: "Maria Santos",
+        categoria: "Materiais",
+        observacoes: "Especialistas em produtos de limpeza automotiva"
+      },
+      {
+        nome: "Equipamentos Auto Center",
+        telefone: "(11) 3333-3333",
+        email: "comercial@equipautos.com.br",
+        cnpj: "45.678.901/0001-23",
+        endereco: "Rua dos Equipamentos, 789 - Vila Industrial, São Paulo - SP",
+        contato: "Pedro Oliveira",
+        categoria: "Equipamentos",
+        observacoes: "Fornecedor de equipamentos para lava-jato"
+      },
+      {
+        nome: "Químicos Industriais Brasil",
+        telefone: "(11) 3333-4444",
+        email: "pedidos@quimicosbr.com.br",
+        cnpj: "67.890.123/0001-45",
+        endereco: "Rodovia dos Bandeirantes, km 45 - Jundiaí - SP",
+        contato: "Ana Costa",
+        categoria: "Materiais",
+        observacoes: "Produtos químicos para limpeza profissional"
+      },
+      {
+        nome: "Ferramentas e Acessórios Ltda",
+        telefone: "(11) 3333-5555",
+        email: "vendas@ferramentas.com.br",
+        cnpj: "23.456.789/0001-67",
+        endereco: "Rua das Ferramentas, 321 - Bairro Industrial, São Paulo - SP",
+        contato: "Carlos Rodrigues",
+        categoria: "Equipamentos",
+        observacoes: "Ferramentas e acessórios para manutenção"
+      },
+      {
+        nome: "Distribuidora de Ceras",
+        telefone: "(11) 3333-6666",
+        email: "contato@cerasdistribuidora.com.br",
+        cnpj: "89.012.345/0001-89",
+        endereco: "Av. das Indústrias, 654 - São Bernardo do Campo - SP",
+        contato: "Fernanda Lima",
+        categoria: "Materiais",
+        observacoes: "Especializada em ceras e protetores para veículos"
+      },
+      {
+        nome: "Soluções em Higienização",
+        telefone: "(11) 3333-7777",
+        email: "comercial@higienizacaosolucoes.com.br",
+        cnpj: "34.567.890/0001-12",
+        endereco: "Rua da Higienização, 987 - Centro, São Paulo - SP",
+        contato: "Roberto Alves",
+        categoria: "Materiais",
+        observacoes: "Produtos para higienização de ar-condicionado"
+      },
+      {
+        nome: "Importadora de Equipamentos",
+        telefone: "(11) 3333-8888",
+        email: "import@equipimport.com.br",
+        cnpj: "56.789.012/0001-34",
+        endereco: "Av. Internacional, 147 - Guarulhos - SP",
+        contato: "Juliana Pereira",
+        categoria: "Equipamentos",
+        observacoes: "Importadora de equipamentos importados"
+      }
+    ];
+
+    for (const fornecedor of fornecedoresData) {
+      await addDoc(fornecedoresRef, fornecedor);
+    }
+    console.log("Fornecedores adicionados com sucesso!");
+
     // Seed Agendamentos
     const agendamentosRef = collection(db, "agendamentos");
     const agendamentosData = [

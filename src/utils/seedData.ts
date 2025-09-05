@@ -147,6 +147,46 @@ export const seedDatabase = async () => {
     }
     console.log("Colaboradores adicionados com sucesso!");
 
+    // Seed Fornecedores
+    const fornecedoresRef = collection(db, "fornecedores");
+    const fornecedoresData = [
+      {
+        nome: "Auto Peças Silva Ltda",
+        telefone: "(11) 3333-1111",
+        email: "contato@autopecassilva.com.br",
+        cnpj: "12.345.678/0001-90",
+        endereco: "Rua das Peças, 123 - Centro, São Paulo - SP",
+        contato: "João Silva",
+        categoria: "Materiais",
+        observacoes: "Fornecedor de peças automotivas, entrega rápida"
+      },
+      {
+        nome: "Produtos de Limpeza Premium",
+        telefone: "(11) 3333-2222",
+        email: "vendas@limpezapremium.com.br",
+        cnpj: "98.765.432/0001-10",
+        endereco: "Av. Industrial, 456 - Distrito Industrial, São Paulo - SP",
+        contato: "Maria Santos",
+        categoria: "Materiais",
+        observacoes: "Especialistas em produtos de limpeza automotiva"
+      },
+      {
+        nome: "Equipamentos Auto Center",
+        telefone: "(11) 3333-3333",
+        email: "comercial@equipautos.com.br",
+        cnpj: "45.678.901/0001-23",
+        endereco: "Rua dos Equipamentos, 789 - Vila Industrial, São Paulo - SP",
+        contato: "Pedro Oliveira",
+        categoria: "Equipamentos",
+        observacoes: "Fornecedor de equipamentos para lava-jato"
+      }
+    ];
+
+    for (const fornecedor of fornecedoresData) {
+      await addDoc(fornecedoresRef, fornecedor);
+    }
+    console.log("Fornecedores adicionados com sucesso!");
+
     // Seed Agendamentos
     const agendamentosRef = collection(db, "agendamentos");
     const agendamentosData = [
