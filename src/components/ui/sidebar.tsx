@@ -190,7 +190,7 @@ const Sidebar = React.forwardRef<
       )
     }
 
-    if (isMobile) {
+      if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
@@ -204,6 +204,13 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            {/* Hide the default close button */}
+            <style>{`
+              [data-sidebar="sidebar"] > button,
+              [data-sidebar="sidebar"] > button.absolute.right-4.top-4 {
+                display: none !important;
+              }
+            `}</style>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>

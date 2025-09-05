@@ -15,7 +15,8 @@ import {
   Bell,
   Settings,
   LogOut,
-  Menu
+  Menu,
+  Receipt
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -44,6 +45,7 @@ const menuItems = [
   { title: "Materiais", url: "/materiais", icon: Package },
   { title: "Ordens de Serviço", url: "/ordem-servico", icon: FileText },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
+  { title: "Controle de Caixa", url: "/controle-caixa", icon: Receipt },
   { title: "Histórico de Serviços", url: "/historico-servicos", icon: History },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Colaboradores", url: "/colaboradores", icon: UserCheck },
@@ -52,12 +54,14 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+
+
 
   const handleLogout = async () => {
     await logout();
@@ -71,7 +75,7 @@ export function AppSidebar() {
       : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
+    <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
       <SidebarContent className="bg-gradient-to-b from-secondary to-secondary/90">
         {/* Logo/Brand */}
         <div className="p-4 border-b border-border/50">

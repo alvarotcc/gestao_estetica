@@ -16,6 +16,7 @@ import Relatorios from "./pages/Relatorios";
 import OrdemServico from "./pages/OrdemServico";
 import Financeiro from "./pages/Financeiro";
 import HistoricoServicos from "./pages/HistoricoServicos";
+import ControleCaixa from "./pages/ControleCaixa";
 import Notificacoes from "./pages/Notificacoes";
 import ChecklistTemplates from "./pages/ChecklistTemplates";
 import Colaboradores from "./pages/Colaboradores";
@@ -204,6 +205,16 @@ const App = () => (
                 <PrivateRoute>
                   <MainLayout>
                     <Notificacoes />
+                  </MainLayout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/controle-caixa"
+              element={
+                <PrivateRoute>
+                  <MainLayout>
+                    <ControleCaixa />
                   </MainLayout>
                 </PrivateRoute>
               }
