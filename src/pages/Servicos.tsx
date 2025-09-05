@@ -1,158 +1,278 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// src/pages/Servicos.tsx
+import { useState, useEffect } from "react";
+import { Wrench, Plus, Search, Edit, Trash2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Edit, Trash2 } from "lucide-react";
-
-// Mock data for services
-const mockServices = [
-  { id: "1", name: "Lavagem Detalhada", price: 150.00 },
-  { id: "2", name: "Polimento Técnico", price: 350.00 },
-  { id: "3", name: "Cristalização", price: 250.00 },
-];
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { collection, onSnapshot, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface Service {
-  id: string;
-  name: string;
-  price: number;
+  id: string;
+  nome: string;
+  descricao: string;
+  preco: number;
 }
 
 export default function Servicos() {
-  const [services, setServices] = useState<Service[]>(mockServices);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentService, setCurrentService] = useState<Service | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [newService, setNewService] = useState({
+    nome: "",
+    descricao: "",
+    preco: 0
+  });
 
-  // Use state to manage form values
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState(0);
+  useEffect(() => {
+    const servicesCollection = collection(db, "servicos");
+    const unsubscribe = onSnapshot(servicesCollection, (snapshot) => {
+      const servicesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Service[];
+      setServices(servicesData);
+    }, (error) => {
+      console.error("Erro ao buscar serviços: ", error);
+    });
 
-  const handleSave = (e: React.FormEvent) => {
+    return () => unsubscribe();
+  }, []);
+
+  const filteredServices = services.filter(service =>
+    service.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    service.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (editingService) {
+      setEditingService(prev => prev ? { ...prev, [name]: value } : null);
+    } else {
+      setNewService({ ...newService, [name]: value });
+    }
+  };
+
+  const handleOpenDialog = (service: Service | null = null) => {
+    if (service) {
+      setEditingService(service);
+    } else {
+      setNewService({
+        nome: "",
+        descricao: "",
+        preco: 0
+      });
+      setEditingService(null);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setNewService({
+      nome: "",
+      descricao: "",
+      preco: 0
+    });
+    setEditingService(null);
+  };
+
+  const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (editingService) {
+      try {
+        const serviceDoc = doc(db, "servicos", editingService.id);
+        const { id, ...serviceData } = editingService;
+        await updateDoc(serviceDoc, serviceData);
+        console.log("Serviço atualizado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao atualizar serviço:", error);
+      }
+    } else {
+      try {
+        await addDoc(collection(db, "servicos"), newService);
+        console.log("Serviço adicionado com sucesso!");
+        handleCloseDialog();
+      } catch (error) {
+        console.error("Erro ao adicionar serviço:", error);
+      }
+    }
+  };
 
-    const newService = {
-      name: name,
-      price: price,
-    };
+  const handleDeleteService = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este serviço?")) {
+      try {
+        const serviceDoc = doc(db, "servicos", id);
+        await deleteDoc(serviceDoc);
+        console.log("Serviço excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir serviço:", error);
+      }
+    }
+  };
 
-    if (currentService) {
-      setServices(services.map(s => s.id === currentService.id ? { ...s, ...newService, id: s.id } : s));
-    } else {
-      setServices([...services, { ...newService, id: Date.now().toString() }]);
-    }
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Gestão de Serviços</h1>
+          <p className="text-muted-foreground">Gerencie os serviços oferecidos</p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary hover:shadow-glow transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Serviço
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{editingService ? "Editar Serviço" : "Cadastrar Novo Serviço"}</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto">
+              <form onSubmit={handleSaveService} className="space-y-4 pr-2">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome do Serviço *</Label>
+                <Input
+                  id="nome"
+                  name="nome"
+                  value={editingService?.nome || newService.nome}
+                  onChange={handleInputChange}
+                  placeholder="Ex: Lavagem Completa"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="descricao">Descrição *</Label>
+                <Textarea
+                  id="descricao"
+                  name="descricao"
+                  value={editingService?.descricao || newService.descricao}
+                  onChange={handleInputChange}
+                  placeholder="Descrição detalhada do serviço"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="preco">Preço (R$) *</Label>
+                <Input
+                  id="preco"
+                  name="preco"
+                  type="number"
+                  step="0.01"
+                  value={editingService?.preco || newService.preco}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <DialogFooter className="mt-4 flex-shrink-0">
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-gradient-primary">
+                  {editingService ? "Salvar Alterações" : "Cadastrar Serviço"}
+                </Button>
+              </DialogFooter>
+              </form>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-    setIsDialogOpen(false);
-    setCurrentService(null);
-  };
+      {/* Search Bar */}
+      <Card className="border-0 shadow-card">
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Buscar por nome ou descrição..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-  const handleDelete = (id: string) => {
-    setServices(services.filter(s => s.id !== id));
-  };
-
-  const handleEdit = (service: Service) => {
-    setCurrentService(service);
-    // Set the state with the service's current values
-    setName(service.name);
-    setPrice(service.price);
-    setIsDialogOpen(true);
-  };
-
-  const handleAdd = () => {
-    setCurrentService(null);
-    setName('');
-    setPrice(0);
-    setIsDialogOpen(true);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Gestão de Serviços</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAdd}>
-              <Plus className="mr-2 h-4 w-4" /> Adicionar Serviço
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{currentService ? "Editar Serviço" : "Adicionar Serviço"}</DialogTitle>
-              <DialogDescription>
-                Preencha os dados do serviço para salvar.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSave}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Nome</Label>
-                  <Input 
-                      id="name" 
-                      name="name" 
-                      className="col-span-3" 
-                      value={name} 
-                      onChange={(e) => setName(e.target.value)}
-                      required 
-                    />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="price" className="text-right">Preço</Label>
-                  <Input 
-                      id="price" 
-                      name="price" 
-                      type="number" 
-                      step="0.01" 
-                      className="col-span-3" 
-                      value={price} 
-                      onChange={(e) => setPrice(parseFloat(e.target.value))}
-                      required 
-                    />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">{currentService ? "Salvar Alterações" : "Adicionar"}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Serviços</CardTitle>
-          <CardDescription>
-            Gerencie todos os serviços oferecidos pela sua estética.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {services.map((service) => (
-                <TableRow key={service.id}>
-                  <TableCell>{service.name}</TableCell>
-                  <TableCell>{`R$ ${service.price.toFixed(2)}`}</TableCell>
-                  <TableCell className="text-right flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(service.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
+      {/* Services Table */}
+      <Card className="border-0 shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Lista de Serviços ({filteredServices.length})</span>
+            <Badge variant="secondary" className="text-sm">
+              Total: {services.length} serviços
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Serviço</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredServices.map((service) => (
+                  <TableRow key={service.id} className="hover:bg-muted/50">
+                    <TableCell>
+                      <div className="font-medium">{service.nome}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">{service.descricao}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(service.preco)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleOpenDialog(service)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDeleteService(service.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
